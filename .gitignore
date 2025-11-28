@@ -8,4 +8,5 @@ __cache__
 bin/gsat-1.0.jar
 *.tar.xz
 *.json
-
+e2e/exebench_test_outputs/
+tmp*

@@ -118,7 +118,7 @@ def test_exebench_embedding(
     
     successful = 0
     failed = 0
-    
+    binary_func_list = []
     # Process each sample
     for idx in tqdm(range(num_samples), desc="Processing samples"):
         record = exebench_dataset[idx]
@@ -131,37 +131,39 @@ def test_exebench_embedding(
                 print(f"[!] Failed to compile sample {idx} ({fname})")
                 failed += 1
                 continue
-            
-            # Get function name from record (use fname as function name)
-            func_name = fname
-            
-            # Get embedding
-            embeddings = embedding_model.get_binary_embedding(
-                binary_path=binary_path,
-                func_name=func_name
-            )
-            
-            if embeddings is not None:
-                print(f"[+] Sample {idx} ({fname}): embedding shape {embeddings.shape}")
-                successful += 1
-            else:
-                print(f"[!] Failed to get embedding for sample {idx} ({fname})")
-                failed += 1
+            binary_func_list.append((binary_path, None))
                 
         except Exception as e:
             print(f"[!] Error processing sample {idx} ({fname}): {e}")
             failed += 1
             continue
     
-    print(f"\n[*] Test completed:")
-    print(f"    Successful: {successful}/{num_samples}")
-    print(f"    Failed: {failed}/{num_samples}")
+    # 1. Test in sequtial
+    success_count = 0
+    failed_count = 0
+    # for binary_path, func_name in binary_func_list:
+    #     try:
+    #         embeddings = embedding_model.get_binary_embedding(binary_path, func_name)
+    #         print(f"[+] Embeddings shape: {embeddings.shape}")
+    #         success_count += 1
+    #     except Exception as e:
+    #         print(f"[!] Error processing sample {idx} ({fname}): {e}")
+    #         failed_count += 1
+    #         continue
+    # print(f"[+] Success count: {success_count}")
+    # print(f"[+] Failed count: {failed_count}")
+
+    # 2. Test in batch
+    embeddings = embedding_model.get_binary_embedding_batch(binary_func_list, nproc=32)
+    print(embeddings.shape)
+    print(f"[+] Success count: {success_count}")
+    print(f"[+] Failed count: {failed_count}")
 
 
 if __name__ == "__main__":
     # Test with a small number of samples first
     test_exebench_embedding(
-        num_samples=5,  # Start with 5 samples for testing
+        num_samples=64,  # Start with 5 samples for testing
         working_dir="outputs/experiments/hermes_sim/9",
         sub_dir="graph-ggnn-batch_pair-pcode_sog",
         graph_type="SOG",
