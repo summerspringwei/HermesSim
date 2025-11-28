@@ -36,12 +36,12 @@ AR_OBJ_MAP = {
     "libmicrohttpd.a": "libmicrohttpd_la-connection.o",
     "libtomcrypt.a": "aes.o",
 }
-
+IDB_HOME_PATH = "/home/xiachunwei/Projects/binary_function_similarity/Binaries/"
 
 def idb_path_to_binary_path(idb_path):
     assert idb_path[-4:] == ".i64" or idb_path[-4:] == ".idb"
     assert idb_path[:5] == "IDBs/"
-    return "binaries" + idb_path[4:-4]
+    return IDB_HOME_PATH + idb_path[4:-4]
 
 
 def extract_time(out: str):
@@ -53,11 +53,12 @@ def extract_time(out: str):
 
 
 def do_one_extractor(
-    cfg_summary_fp, graph_type, verbose, output_dir, firmware_info=None
+    cfg_summary_fp, graph_type, verbose, output_dir, firmware_info=None, bin_fp=None
 ):
     with open(cfg_summary_fp, "r") as f:
         idb_fp = list(json.load(f).keys())[0]
-    bin_fp = idb_path_to_binary_path(idb_fp)
+    
+    bin_fp = idb_path_to_binary_path(idb_fp) if bin_fp is None else bin_fp
     bin_base = os.path.basename(bin_fp)
     output_name = bin_base + ACFG_POSTFIX
     output_fp = os.path.join(output_dir, output_name)

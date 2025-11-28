@@ -5,3 +5,7 @@
 /temp
 __pycache__
 __cache__
+bin/gsat-1.0.jar
+*.tar.xz
+*.json
+

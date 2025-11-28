@@ -12,7 +12,7 @@
 # Summarize the dataset infos for ease of lifting                            #
 ##############################################################################
 
-
+import os
 import argparse
 import json
 import pandas
@@ -72,9 +72,13 @@ if __name__ == "__main__":
             summary[idb_path] = [finfo]
         else:
             summary[idb_path].append(finfo)
-
+    print(len(summary))
     for idb_path, finfos in tqdm(summary.items()):
         bin_name = get_bin_name(idb_path)
+        if not os.path.exists(cfgs_folder):
+            continue
+        if not os.path.exists(join(cfgs_folder, bin_name + "_acfg_features.json")):
+            continue
         acfg_feats = get_acfg_features_json(cfgs_folder, bin_name)[idb_path]
         for finfo in finfos:
             fva = finfo["start_ea"]
@@ -83,6 +87,8 @@ if __name__ == "__main__":
                 bb_va_hex = hex(int(bb_va))
                 finfo["nodes"].append([bb_va_hex, bb_feats["bb_len"]])
         summary_fn = join(summary_folder, bin_name + "_cfg_summary.json")
+        if not os.path.exists(summary_folder):
+            os.makedirs(summary_folder)
         with open(summary_fn, "w") as f:
             json.dump({idb_path: finfos}, f)
         summary[idb_path] = None
