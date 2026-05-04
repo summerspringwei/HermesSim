@@ -9,12 +9,7 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hersemsim_embedding import HersemSimEmbedding
 
-exebench_path = "/data1/xiachunwei/Datasets/filtered_exebench/train_synth_rich_io_filtered_llvm_extract_func_ir_assembly_O2_llvm_diff/train_synth_rich_io_filtered_0_llvm_extract_func_ir_assembly_O2_llvm_diff_sample_100"
-# exebench_path = '/home/xiachunwei/Dataset/exebench_dataset/train_synth_rich_io_filtered_0_llvm_extract_func_ir_assembly_O2_llvm_diff_sample_100/'
-exebench_dataset = load_from_disk(exebench_path)
-
-
-def compile_asm_to_binary(record, work_dir, idx):
+def compile_asm_to_binary(record, work_dir, idx, compiler: str = 'gcc'):
     """
     Compiles assembly code in record['asm']['code'][-1] to a binary file named '{record['fname']}.o'
     in the current directory.
@@ -23,6 +18,7 @@ def compile_asm_to_binary(record, work_dir, idx):
         record: A dataset record with keys 'asm' (dict with 'code' as list) and 'fname' (output name).
         work_dir: Working directory where compiled binaries will be stored.
         idx: Index of record (used for creating subdirectories).
+        compiler: The compiler to use for compilation.
     Returns:
         output_file: The path to the compiled object file, or None if compilation failed.
     """
@@ -43,15 +39,17 @@ def compile_asm_to_binary(record, work_dir, idx):
     # Compile assembly to object file
     output_file = os.path.join(record_dir, f"{fname}.o")
     try:
-        # Use gcc to compile assembly to object file
         # -c: compile only, don't link
         # -m64: ensure 64-bit (x86-64)
         result = subprocess.run(
-            ['gcc', '-c', '-m64', asm_file, '-o', output_file],
+            [compiler, '-c', '-m64', asm_file, '-o', output_file],
             capture_output=True,
             text=True,
             check=True
         )
+        if result.returncode != 0:
+            print(f"[!] Failed to compile {asm_file}: {result.stderr}")
+            return None
         return output_file
     except subprocess.CalledProcessError as e:
         print(f"[!] Failed to compile {asm_file}: {e.stderr}")
@@ -61,8 +59,8 @@ def compile_asm_to_binary(record, work_dir, idx):
         return None
 
 
-def test_exebench_embedding(
-    num_samples=None,
+def exebench_embedding_hermessim(
+    exebench_dataset,
     working_dir="outputs/experiments/hermes_sim/9",
     sub_dir="graph-ggnn-batch_pair-pcode_sog",
     graph_type="SOG",
@@ -123,7 +121,6 @@ def test_exebench_embedding(
     for idx in tqdm(range(num_samples), desc="Processing samples"):
         record = exebench_dataset[idx]
         fname = record['fname']
-        
         try:
             # Compile assembly to binary
             binary_path = compile_asm_to_binary(record, work_dir, idx)
@@ -132,41 +129,16 @@ def test_exebench_embedding(
                 failed += 1
                 continue
             binary_func_list.append((binary_path, None))
-                
         except Exception as e:
             print(f"[!] Error processing sample {idx} ({fname}): {e}")
             failed += 1
-            continue
     
     # 1. Test in sequtial
     success_count = 0
     failed_count = 0
-    # for binary_path, func_name in binary_func_list:
-    #     try:
-    #         embeddings = embedding_model.get_binary_embedding(binary_path, func_name)
-    #         print(f"[+] Embeddings shape: {embeddings.shape}")
-    #         success_count += 1
-    #     except Exception as e:
-    #         print(f"[!] Error processing sample {idx} ({fname}): {e}")
-    #         failed_count += 1
-    #         continue
-    # print(f"[+] Success count: {success_count}")
-    # print(f"[+] Failed count: {failed_count}")
-
     # 2. Test in batch
     embeddings = embedding_model.get_binary_embedding_batch(binary_func_list, nproc=32)
     print(embeddings.shape)
     print(f"[+] Success count: {success_count}")
     print(f"[+] Failed count: {failed_count}")
-
-
-if __name__ == "__main__":
-    # Test with a small number of samples first
-    test_exebench_embedding(
-        num_samples=8,  # Start with 5 samples for testing
-        working_dir="outputs/experiments/hermes_sim/9",
-        sub_dir="graph-ggnn-batch_pair-pcode_sog",
-        graph_type="SOG",
-        opc_dict_dir="inputs/pcode_raw/",
-        device='cuda:0'
-    )
+    return embeddings

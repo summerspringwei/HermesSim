@@ -54,9 +54,9 @@ def normalize_instruction(mnemonic, operands_str):
 
 def process_function(function, bb_model, listing, monitor):
     """Process a single function and return its CFG data."""
-    print("=" * 40)
-    print("Analyzing Function: {} at {}".format(function.getName(), function.getEntryPoint()))
-    print("=" * 40)
+    # print("=" * 40)
+    # print("Analyzing Function: {} at {}".format(function.getName(), function.getEntryPoint()))
+    # print("=" * 40)
     
     try:
         # Get all CodeBlocks for the function's body
@@ -72,14 +72,14 @@ def process_function(function, bb_model, listing, monitor):
         basic_blocks = {}
         
         # 4. --- Process Basic Blocks (Nodes) ---
-        print("\n## Processing Basic Blocks ##")
+        # print("\n## Processing Basic Blocks ##")
         
         for block in all_blocks:
             start_addr = block.getFirstStartAddress()
             end_addr = block.getMaxAddress()
             block_offset = int(start_addr.getOffset())
             
-            print("[+] Block: {} (0x{:x})".format(start_addr, block_offset))
+            # print("[+] Block: {} (0x{:x})".format(start_addr, block_offset))
             
             # Collect instruction data
             bb_mnems = []
@@ -154,7 +154,7 @@ def process_function(function, bb_model, listing, monitor):
             nodes.append(["0x{:x}".format(block_offset), bb_len])
         
         # 5. --- Process Jump Relationships (Edges) ---
-        print("\n## Processing Edges ##")
+        # print("\n## Processing Edges ##")
         for block in all_blocks:
             block_start = block.getFirstStartAddress()
             block_offset = int(block_start.getOffset())
@@ -173,7 +173,7 @@ def process_function(function, bb_model, listing, monitor):
                 
                 # Add edge
                 edges.append([block_offset, dest_offset])
-                print("{} --> {}".format(block_start, dest_addr))
+                # print("{} --> {}".format(block_start, dest_addr))
         
         # Return function data
         return {
@@ -275,15 +275,15 @@ program_path = program.getExecutablePath()
 start_time = time.time()
 
 # --- 4. Process All Functions ---
-print("\n" + "=" * 60)
-print("Starting analysis of {} function(s)...".format(len(functions_to_process)))
-print("=" * 60)
+# print("\n" + "=" * 60)
+# print("Starting analysis of {} function(s)...".format(len(functions_to_process)))
+# print("=" * 60)
 
 all_function_data = []
 
 try:
     for idx, function in enumerate(functions_to_process, 1):
-        print("\n[{}/{}]".format(idx, len(functions_to_process)))
+        # print("\n[{}/{}]".format(idx, len(functions_to_process)))
         func_data = process_function(function, bb_model, listing, monitor)
         # Note, we only append the function data if it has nodes, 
         # because some functions are external/imported and not defined in the binary
@@ -292,9 +292,9 @@ try:
     
     # Calculate elapsed time
     elapsed_time = time.time() - start_time
-    print("\n" + "=" * 60)
+    # print("\n" + "=" * 60)
     print("Analysis complete. Processed {} function(s) in {:.2f} seconds.".format(len(all_function_data), elapsed_time))
-    print("=" * 60)
+    # print("=" * 60)
     
     # --- 5. Build final JSON structure ---
     result = {

@@ -10,3 +10,4 @@ bin/gsat-1.0.jar
 *.json
 e2e/exebench_test_outputs/
 tmp*
+*.egg-info/
